@@ -1,0 +1,12 @@
+CHANGELOG.md
+LICENSE.txt
+MANIFEST.in
+README.md
+setup.cfg
+setup.py
+src/rainflow.py
+src/rainflow.egg-info/PKG-INFO
+src/rainflow.egg-info/SOURCES.txt
+src/rainflow.egg-info/dependency_links.txt
+src/rainflow.egg-info/requires.txt
+src/rainflow.egg-info/top_level.txt

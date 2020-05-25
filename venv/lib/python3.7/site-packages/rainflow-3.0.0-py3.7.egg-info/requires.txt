@@ -1,0 +1,6 @@
+
+[:python_version < "3.8"]
+importlib_metadata
+
+[dev]
+pytest~=4.6

@@ -1,4 +1,4 @@
-#!/Users/jhthompson12/Documents/ResidentialRenewablesAnalyzer/venv/bin/python
+#!/Users/jhthompson12/venv/bin/python3
 # EASY-INSTALL-ENTRY-SCRIPT: 'future==0.18.2','console_scripts','pasteurize'
 __requires__ = 'future==0.18.2'
 import re
