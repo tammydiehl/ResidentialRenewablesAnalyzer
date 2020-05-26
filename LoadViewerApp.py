@@ -92,20 +92,24 @@ def event_plots(st, locl, load, current_st):
         data_dir = available_loads[(available_loads["State"] == st) &
                                    (available_loads["Load Level"] == load)]["File Dir"].iloc[0]
 
-    load_data = pd.read_csv(data_dir, date_parser=mydateparser, parse_dates=[0])
+    load_data = pd.read_csv(data_dir, date_parser=mydateparser, parse_dates=[0]).set_index('Date/Time')
 
     ### Tammy plot will replace this figure
-    figure = {
-        'data': [
-            {'x': [1, 2, 3], 'y': [4, 1, 2], 'type': 'bar', 'name': 'SF'},
-            {'x': [1, 2, 3], 'y': [2, 4, 5], 'type': 'bar', 'name': u'Montréal'},
-        ],
-        'layout': {
-            'title': 'Tammy Plot Here'
-        }
-    }
+    # Create a filled area plot using plotly graph_objects
+    fig = go.Figure()
+    for cols in load_data:
+        if ~(load_data[cols] == 0).all():
+            fig.add_trace(
+                go.Scatter(
+                    x=load_data.index,
+                    y=load_data[cols],
+                    name=cols,
+                    mode='none',
+                    stackgroup='one'
+                )
+            )
 
-    return figure, data_dir, locale_dropdown_options, load_type_dropdown_options, st
+    return fig, data_dir, locale_dropdown_options, load_type_dropdown_options, st
 
 
 if __name__ == '__main__':
