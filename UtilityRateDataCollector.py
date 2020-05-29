@@ -27,14 +27,14 @@ import json
 
 rate_db = pd.read_csv("Utility Tariffs/tariff_db.csv")
 
-# send a request to OpenEI API to get the selected rate info
+# send a request to OpenEI API to get the selected rate info. https://openei.org/services/doc/rest/util_rates/
 api_url = "https://api.openei.org/utility_rates?params"
 
 paramets = {
     "version": "latest",
     "format": "json",
     "api_key": "snVIu7FREbmucvgeZjPgsumRjdCCqQtwHd0QJsmb",
-    "getpage": "5d5582305457a3e01135a086",
+    "getpage": "5d5582305457a3e01135a086",   # this will be populated by user input
     "detail": "full",
     "limit": 500
 }
@@ -42,9 +42,3 @@ paramets = {
 tariff_response = requests.get(api_url, params=paramets)
 
 tariff_data = json.loads(tariff_response.text)["items"][0]
-
-f = open("Utility Tariffs/utility_response.csv", "w")
-f.write(tariff_response.text)
-f.close()
-
-selected_tariff = pd.read_csv("Utility Tariffs/utility_response.csv").dropna(axis=1)
