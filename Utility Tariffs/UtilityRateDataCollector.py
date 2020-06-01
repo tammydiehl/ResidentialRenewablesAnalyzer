@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import json
+import pickle
 
 # these seems to be the most interesting tidbits that we are interested in
 poi = ['name', 'description', 'source', 'dgrules', 'energyratestructure', 'energyweekdayschedule', 'energyweekendschedule', 'energycomments', 'demandrateunit', 'demandunits', 'fixedchargefirstmeter', 'fixedchargeunits', 'flatdemandunit']
@@ -129,3 +130,9 @@ if __name__ == "__main__":
         except KeyError as e:
             pass
             # print(label)
+
+    # with open('Utility Tariffs/tariff_objects.pkl', 'wb') as f:
+    #     pickle.dump(rates, f)
+
+    with open('Utility Tariffs/tariff_objects.pkl', 'rb') as f:
+        rates_loaded = pickle.load(f)
