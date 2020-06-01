@@ -2,6 +2,18 @@ import pandas as pd
 import requests
 import json
 
+# these seems to be the most interesting tidbits that we are interested in
+poi = ['name', 'description', 'source', 'dgrules', 'energyratestructure', 'energyweekdayschedule', 'energyweekendschedule', 'energycomments', 'demandrateunit', 'demandunits', 'fixedchargefirstmeter', 'fixedchargeunits', 'flatdemandunit']
+
+# parameters for OpenEI tariff request
+paramets = {
+        "version": "latest",
+        "format": "json",
+        "api_key": "snVIu7FREbmucvgeZjPgsumRjdCCqQtwHd0QJsmb",
+        "getpage": "5d5582305457a3e01135a086",   # this will be populated by user input. 5d5582305457a3e01135a086
+        "detail": "full",
+        "limit": 500
+    }
 
 
 ### Use this plant data to get a mapping of electric utilities to EIA IDs and the states that the utility is in
@@ -25,20 +37,114 @@ import json
 #
 # rate_db.to_csv("Utility Tariffs/tariff_db.csv", index=False)
 
+# Import the list of rates for the user to choose from
 rate_db = pd.read_csv("Utility Tariffs/tariff_db.csv")
 
 # send a request to OpenEI API to get the selected rate info. https://openei.org/services/doc/rest/util_rates/
 api_url = "https://api.openei.org/utility_rates?params"
 
-paramets = {
-    "version": "latest",
-    "format": "json",
-    "api_key": "snVIu7FREbmucvgeZjPgsumRjdCCqQtwHd0QJsmb",
-    "getpage": "5d5582305457a3e01135a086",   # this will be populated by user input
-    "detail": "full",
-    "limit": 500
-}
 
-tariff_response = requests.get(api_url, params=paramets)
+def configRateStruct(rate_struct_list):
+    rate_struct = pd.DataFrame()
+    p = 0
+    for period in rate_struct_list:
+        t = 0
+        for tier in period:
+            ind = pd.MultiIndex.from_tuples([(p, t)], names=["Period", "Tier"])
+            row = pd.DataFrame(tier, index=ind)
+            rate_struct = pd.concat([rate_struct, row])
+            t += 1
+        p += 1
+    return rate_struct
 
-tariff_data = json.loads(tariff_response.text)["items"][0]
+
+class residentialTariff:
+    def __init__(self, rate_identifier):
+        req_params = paramets
+        req_params["getpage"] = rate_identifier
+
+        # save the response from the API call for troubleshooting
+        self.apiResponse = requests.get(api_url, params=req_params)
+
+        # unpack the json goods as a dict for analysis, save for troubleshooting
+        self.tariffData = json.loads(self.apiResponse.text)["items"][0]
+
+        # save the tariff name
+        self.name = self.tariffData["name"]
+
+        # This saves the link to a page which shows all the information about this tariff
+        self.source_page = self.tariffData["uri"]
+
+        # get energy related rate structure, if it exists
+        try:
+            self.energyComp = self.EnergyComponent(self.tariffData)
+        except KeyError as e:
+            pass
+
+        # get energy related rate structure, if it exists
+        try:
+            self.demandComp = self.DemandComponent(self.tariffData)
+        except KeyError as e:
+            pass
+
+        # get energy related rate structure, if it exists
+        try:
+            self.fixedComp = self.FixedComponent(self.tariffData)
+        except KeyError as e:
+            pass
+
+        # # get energy related rate structure, if it exists
+        # try:
+        #     self.energyRateStruct = self.configRateStruct(self.tariffData["energyratestructure"])
+        #     self.energyWeekdaySched, self.energyWeekendSched = self.EnergySched(self.tariffData["energyweekdayschedule"], self.tariffData["energyweekendschedule"])
+        #     self.hasEnergy = True
+        # except KeyError as e:
+        #     self.hasEnergy = False
+        #
+        # # get fixed charges if they exists
+        # try:
+        #     self.fixedChargeUnits = self.tariffData['fixedchargeunits']
+        #     self.fixedChargeAmount = self.tariffData['fixedchargefirstmeter']
+        #     self.hasFixed = True
+        # except KeyError as e:
+        #     self.hasFixed = False
+        #
+        # # get demand related rate structure, if it exists
+        # try:
+        #     self.flatDemandRateStruct = self.configRateStruct(self.tariffData["flatdemandratestructure"])
+        #     self.flatDemandMonthSched = pd.DataFrame(self.demandMonthSched(self.tariffData["flatdemandmonths"]), columns="Months")
+        #     self.flatDemandUnit = self.tariffData["flatdemandunit"]
+        #     self.hasDemand = True
+        # except KeyError as e:
+        #     self.hasDemand = False
+
+    class EnergyComponent:
+        def __init__(self, tariffData):
+            self.energyRateStruct = configRateStruct(tariffData["energyratestructure"])
+            self.energyWeekdaySched, self.energyWeekendSched = self.energySched(tariffData["energyweekdayschedule"], tariffData["energyweekendschedule"])
+
+        def energySched(self, weekday, weekend):
+            weekday_sched = pd.DataFrame()
+            weekend_sched = pd.DataFrame()
+            for m in range(len(weekday)):
+                weekday_sched = pd.concat([weekday_sched, pd.DataFrame(weekday[m], columns=[m]).T])
+                weekend_sched = pd.concat([weekend_sched, pd.DataFrame(weekend[m], columns=[m]).T])
+
+            return weekday_sched, weekend_sched
+
+    class DemandComponent:
+        def __init__(self, tariffData):
+            self.flatDemandRateStruct = configRateStruct(tariffData["flatdemandratestructure"])
+            self.flatDemandMonthSched = pd.DataFrame(self.demandMonthSched(tariffData["flatdemandmonths"]),
+                                                     columns="Months")
+            self.flatDemandUnit = tariffData["flatdemandunit"]
+
+    class FixedComponent:
+        def __init__(self, tariffData):
+            self.fixedChargeUnits = tariffData['fixedchargeunits']
+            self.fixedChargeAmount = tariffData['fixedchargefirstmeter']
+
+
+if __name__ == "__main__":
+    # test = residentialTariff("5d5582305457a3e01135a086")
+    soco_rates = {label: residentialTariff(label) for label in rate_db[rate_db["eiaid"] == 7140]["label"]}
