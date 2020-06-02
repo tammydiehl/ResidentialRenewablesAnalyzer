@@ -8,10 +8,11 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 
 
-app = dash.Dash(__name__)
+# app = dash.Dash(__name__)
+
 
 # Parser to help with the import of the date column, hopefully it works for all files..
-mydateparser = lambda x: datetime.datetime.strptime("2020-%s %s:00:00" % (x.split()[0], int(x.split()[-1].split(":")[0])-1), "%Y-%m/%d %H:%M:%S")
+# mydateparser = lambda x: datetime.datetime.strptime("2020-%s %s:00:00" % (x.split()[0], int(x.split()[-1].split(":")[0])-1), "%Y-%m/%d %H:%M:%S")
 
 ### traverse load data directory to get state and city information from files
 ### Comment out for now, just ran it once to create the file once
@@ -30,7 +31,7 @@ mydateparser = lambda x: datetime.datetime.strptime("2020-%s %s:00:00" % (x.spli
 # load_files_avail.to_csv("residential_load_data/available_loads_summary.csv")
 
 # import the loads that are available
-available_loads = pd.read_csv("residential_load_data/available_loads_summary.csv", usecols=[1, 2, 3, 4])
+available_loads = pd.read_pickle("residential_load_pickles/available_loads_summary.pkl")#, usecols=[1, 2, 3, 4])
 
 # pre-make the list of dictionaries for dropdown menus
 state_dropdown_options = [{'label': state, 'value': state} for state in available_loads["State"].unique()]
@@ -42,6 +43,7 @@ load_type_dropdown_options = [{'label': load_type, 'value': load_type} for load_
 
 # Build simple Dash Layout
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
+server = app.server
 
 app.layout = html.Div([
     dcc.Dropdown(
@@ -92,22 +94,22 @@ def event_plots(st, locl, load, current_st):
         data_dir = available_loads[(available_loads["State"] == st) &
                                    (available_loads["Load Level"] == load)]["File Dir"].iloc[0]
 
-    load_data = pd.read_csv(data_dir, date_parser=mydateparser, parse_dates=[0]).set_index('Date/Time')
+    load_data = pd.read_pickle(data_dir)   #, date_parser=mydateparser, parse_dates=[0]).set_index('Date/Time')
 
     ### Tammy plot will replace this figure
     # Create a filled area plot using plotly graph_objects
     fig = go.Figure()
-    for cols in load_data:
-        if ~(load_data[cols] == 0).all():
-            fig.add_trace(
-                go.Scatter(
-                    x=load_data.index,
-                    y=load_data[cols],
-                    name=cols,
-                    mode='none',
-                    stackgroup='one'
-                )
-            )
+    # for cols in load_data:
+    #     if ~(load_data[cols] == 0).all():
+    fig.add_trace(
+        go.Scatter(
+            x=load_data.index,
+            y=load_data,    # [cols]
+            name="Total Load (kW)",
+            mode='none',
+            stackgroup='one'
+        )
+    )
 
     return fig, data_dir, locale_dropdown_options, load_type_dropdown_options, st
 
