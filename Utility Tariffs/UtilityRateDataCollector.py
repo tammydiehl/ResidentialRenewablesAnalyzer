@@ -198,16 +198,16 @@ class year_bill:
 if __name__ == "__main__":
 
     ### This was used to create the rate objects
-    rates_6 = {}
-    for label in rate_db.iloc[4995:]["label"]:
+    rates = {}
+    for label in rate_db.iloc[:999]["label"]:
         try:
-            rates_6[label] = residentialTariff(label)
+            rates[label] = residentialTariff(label)
         except KeyError as e:
             pass
             # print(label)
 
-    with open('tariff_objects_Jun8_6.pkl', 'wb') as f:
-        pickle.dump(rates_6, f)
+    with open('tariff_objects_Jun7.pkl', 'wb') as f:
+        pickle.dump(rates, f)
 
     files = ["tariff_objects_Jun7.pkl", "tariff_objects_Jun7_2.pkl", "tariff_objects_Jun8_3.pkl", "tariff_objects_Jun8_4.pkl", "tariff_objects_Jun8_5.pkl", "tariff_objects_Jun8_6.pkl"]
     all_tariffs = {}
